@@ -1,0 +1,8 @@
+This note is to compare the performance between two versions of Kyanh's (me!:D) test generator
+Objective: Generate only input tests (1000 tests)
+- Original: 0.635 s
+- New: 0.781 s
+Objective: Generate both input & output tests (1000 tests)
+- Original: 28.458 s
+- New: 25.011 s
+(Checked this multiple times, it gives approximately that result shows that new one is faster than old one:)))
