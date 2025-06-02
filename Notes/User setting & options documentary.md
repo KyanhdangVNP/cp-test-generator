@@ -213,5 +213,3 @@ CLEAN_ROOT_FOLDER = true;
 ```
 
 ---
-
-Let me know if you'd like a table or GUI wrapper for easier configuration!
