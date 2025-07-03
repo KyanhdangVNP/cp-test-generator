@@ -7,6 +7,41 @@
 using namespace std;
 typedef long long ll;
 
+// || SYSTEM PRE-INITIALIZERS ||
+// CONSTANT VARIABLES:
+const ll TEST_INFINITY = LONG_LONG_MAX;
+
+// SUBTASK STRUCTURE:
+ll SUBTASK_START;
+ll SUBTASK_END;
+vector<ll> SUBTASK_LIMITS;
+
+struct Subtask {
+    ll startIndex, endIndex;
+    vector<ll> limits;
+
+    // Default constructor
+    Subtask(ll val_startIndex, ll val_endIndex, vector<ll> limits) : startIndex(val_startIndex), endIndex(val_endIndex) {
+        addLimits(limits);
+    }
+
+    void addLimits(vector<ll> limits) {
+        this->limits.insert(this->limits.end(), limits.begin(), limits.end());
+    }
+};
+vector<Subtask> subtasks;
+
+void addSubtask(ll startIndex, ll endIndex, vector<ll> limits) {
+    subtasks.push_back(Subtask(startIndex, endIndex, limits));
+}
+void addSubtask(ll startIndex, ll endIndex) {
+    addSubtask(startIndex, endIndex, {});
+}
+
+
+
+
+
 /* || USER SUPPORT's FUNCTIONS || */
 // Generate a random number in range between l and r
 mt19937_64 rd(time(0));
@@ -35,16 +70,18 @@ void funcInput(ofstream& inp) {
  /* PUT YOUR GENERATE INPUT CODE ABOVE!! */
 /*--------------------------------------*/
 
+
+
+
+
 /* || USER SETTING & OPTIONS || */
 // General test generator information:
 const string FILENAME = "BAI2";
-const int TEST_START = 1;
-const int TEST_END = 20;
 const function<void(ofstream& inp)> FUNC_INPUT = funcInput;
 
 // Options to generate input & output tests:
 bool GENERATE_OUTPUT = true;
-bool SEPERATE_EACH_TEST = false;
+bool SEPERATE_EACH_TEST = true;
 const bool PREVENT_IDENTICAL_TESTS = false; // By default: false
 // THIS OPTION IS NOT RECOMMENDED SINCE IT DRAMATICALLY SLOWS DOWN THE GENERATING PROCESS
 // (With small test cases, set it true. With large test cases, set it false.)
@@ -53,15 +90,29 @@ const bool OVERWRITE_OLD_TESTS = true; // By default: true
 const bool CLEAN_ROOT_FOLDER = false; // By default: false
 
 // Options to stress test between two solution files:
-bool STRESS_TEST = false;
+bool STRESS_TEST = true;
+// - Code files to do stress test with:
+const vector<string> STRESS_TEST_SOLUTIONS = {
+    FILENAME,
+    "other_solution"
+};
 // - The following options should be all set to false if STRESS_TEST = false to prevent errors:
-bool STRESS_TEST_REPEAT_UNTIL_WA = false; // By default: true
 bool STRESS_TEST_FORCE_STOP = false; // By default: true
-bool STRESS_TEST_WRITE_REPORT = false; // By default: true
-bool STRESS_TEST_MOVE_WA_OUTPUT_TO_DIRECTORY = false; // By default: false
-bool STRESS_TEST_KEEP_WA_TEST_ONLY = false;
+bool STRESS_TEST_WRITE_REPORT = true; // By default: true
+bool STRESS_TEST_MOVE_WA_OUTPUT_TO_DIRECTORY = true; // By default: false
+bool STRESS_TEST_KEEP_WA_TEST_ONLY = true;
 // - Options that has to be careful with:
 const bool SHOW_COMPARE_ON_CMD = true; // By default: false
+const bool SHOW_PROCESS_ON_CMD = true; // By default: true
+
+
+/* || USER FUNCTIONS || */
+// This method initializes subtasks (FOR USERS)
+void initializeSubtasks() {
+    addSubtask(1, 10);
+    addSubtask(11, 20);
+}
+
 
 
 
@@ -77,6 +128,8 @@ string directory;
 string inputFileName, outputFileName;
 
 ofstream stressTestLog;
+string solutionName;
+string solutionExeFileName;
 string solutionOutputFileName;
 bool wrongSolutionOutput;
 
@@ -88,6 +141,30 @@ void logError(int test, string line) {
     errorFlag = true;
 }
 
+// Shows message on console if SHOW_PROCESS_ON_CMD = true
+void showMsg(string message) {
+    if (SHOW_PROCESS_ON_CMD) cout << message;
+}
+
+// Compiles and create an executable file of code file that makes the output
+void compileExecutable(string fileName) {
+    showMsg("COMPILING OUTPUT FILE...\n");
+    string command = "g++ " + fileName + ".cpp" + " -O3 -o " + fileName;
+    int result = system(command.c_str());
+    if (!result) showMsg("Compile successful!\n\n");
+    else showMsg("Compile unsuccessful... (output may not be generated in the process)\n\n");
+}
+
+void compileExecutables() {
+    compileExecutable(FILENAME);
+    for (string solutionName : STRESS_TEST_SOLUTIONS) {
+        string solutionCppFileName = solutionName;
+        if (solutionName == FILENAME)
+            solutionCppFileName += "_test";
+        compileExecutable(solutionCppFileName);
+    }
+}
+
 // Generates directory path
 void generateDirectory(int test, string& directory) {
     if (SEPERATE_EACH_TEST)
@@ -96,7 +173,7 @@ void generateDirectory(int test, string& directory) {
         directory = FILENAME+"\\";
 }
 
-// Generates input file's name
+// Generates input file name
 void generateInputFileName(int test, string& inputFileName) {
     if (SEPERATE_EACH_TEST)
         inputFileName = FILENAME+".inp";
@@ -124,7 +201,7 @@ inline bool fileExist (const std::string& name) {
     struct stat buffer;
     return (stat (name.c_str(), &buffer) == 0);
 }
-// Generates output file's name
+// Generates output file name
 void generateOutputFileName(int test) {
     if (SEPERATE_EACH_TEST)
         outputFileName = FILENAME+".out";
@@ -149,70 +226,103 @@ void generateOutputTest(int test) {
 }
 
 
-// Generates solution output file's name
-void generateSolutionOutputFileName(int test) {
-    if (SEPERATE_EACH_TEST)
-        solutionOutputFileName = FILENAME+".ans";
+// Generates solution .exe file name:
+void generateSolutionExeFileName() {
+    // Case if the solution name is identical to the main file name
+    if (solutionName == FILENAME)
+        solutionExeFileName = FILENAME + "_test.exe";
     else
-        solutionOutputFileName = "test"+to_string(test)+".ans";
+        solutionExeFileName = solutionName + ".exe";
+}
+// Generates solution output file name
+void generateSolutionOutputFileName(int test) {
+    // Case if the solution name is identical to the main file name
+    if (solutionName == FILENAME) {
+        if (SEPERATE_EACH_TEST)
+            solutionOutputFileName = FILENAME+".ans";
+        else
+            solutionOutputFileName = "test"+to_string(test)+".ans";
+        return;
+    }
+    // Else
+    if (SEPERATE_EACH_TEST)
+        solutionOutputFileName = solutionName + ".ans";
+    else
+        solutionOutputFileName = "test"+to_string(test)+"_"+solutionName+".ans";
+
 }
 // Moves solution output file
 void moveSolutionOutputFile() {
     if (OVERWRITE_OLD_TESTS)
         remove((directory+solutionOutputFileName).c_str()); // Delete old files first before moving new files into
-    rename((FILENAME+".ans").c_str(), (directory+solutionOutputFileName).c_str()); // Move output file into correct directory
+    rename((solutionName+".ans").c_str(), (directory+solutionOutputFileName).c_str()); // Move output file into correct directory
 }
-bool generateSolutionOutput(int test, string solutionFileName) {
-    if (!fileExist(solutionFileName)) {
-        logError(test, ".exe file for the OTHER solution code doesn't exist!! Stress test process won't be executed.");
+bool generateSolutionOutput(int test) {
+    if (!fileExist(solutionExeFileName)) {
+        logError(test, ".exe file for the OTHER solution code \""+solutionExeFileName+"\" doesn't exist!! Stress test process won't be executed.");
         return false;
     }
-    system(solutionFileName.c_str());
+    system(solutionExeFileName.c_str());
     return true;
 }
 
+
 // Stress test between two solution files
 void stressTest(int test) {
-    string solutionFileName = FILENAME+"_test.exe";
-    if (!generateSolutionOutput(test, solutionFileName))
-        return;
-
     if (!fileExist(FILENAME+".exe")) {
         logError(test, ".exe file for the solution code doesn't exist!! Stress test process won't be executed.");
         return;
     }
+    generateSolutionExeFileName();
+    if (!generateSolutionOutput(test))
+        return;
     // Compares result between two generated output files:
+    solutionOutputFileName = solutionName + ".ans";
     wrongSolutionOutput = false;
-    string command = "fc " + (FILENAME+".out") + " " + (FILENAME+".ans");
+    string command = "fc " + (FILENAME+".out") + " " + solutionOutputFileName;
     if (!SHOW_COMPARE_ON_CMD)
         command += ">nul";
     bool identical = !system(command.c_str());
-    if (identical && STRESS_TEST_WRITE_REPORT) {
-        stressTestLog << "AC" << '\n';
-    } else {
-        if (STRESS_TEST_WRITE_REPORT)
-            stressTestLog << "WA" << '\n';
-        if (STRESS_TEST_MOVE_WA_OUTPUT_TO_DIRECTORY) {
-            generateSolutionOutputFileName(test);
-            moveSolutionOutputFile();
+    // CASE GOT IDENTICAL COMPARISON (AC OUTPUT):
+    if (identical) {
+        if (STRESS_TEST_WRITE_REPORT) {
+            stressTestLog << "Test " << test << " (comparing \"" << solutionName << "\") : AC!" << '\n';
         }
-        wrongSolutionOutput = true;
-        if (STRESS_TEST_FORCE_STOP)
-            stopLoop = true;
+        return;
     }
+    // CASE GOT DIFFERENT COMPARISON (WA OUTPUT):
+    if (STRESS_TEST_WRITE_REPORT)
+        stressTestLog << "Test " << test << " (comparing \"" << solutionName << "\") : WA.." << '\n';
+    if (STRESS_TEST_MOVE_WA_OUTPUT_TO_DIRECTORY) {
+        generateSolutionOutputFileName(test);
+        moveSolutionOutputFile();
+    }
+    wrongSolutionOutput = true;
+    if (STRESS_TEST_FORCE_STOP)
+        stopLoop = true;
 }
-
+// Perform stress test between multiple solution files:
+void stressTests(int test) {
+    for (int i = 0; i < STRESS_TEST_SOLUTIONS.size(); i++) {
+        solutionName = STRESS_TEST_SOLUTIONS[i];
+        stressTest(test);
+        if (solutionName != FILENAME)
+            showMsg("Done stress test between \""+FILENAME+"\" and \""+solutionName+"\".\n");
+        else
+            showMsg("Done stress test between \""+FILENAME+"\" and \""+solutionName+"_test\".\n");
+    }
+    showMsg("DONE STRESS TEST!\n\n");
+}
 
 
 // Checks and stops test generating loop if it's true
 void stopLoopCheck(int test) {
     // Default configuration:
-    if (STRESS_TEST_REPEAT_UNTIL_WA) return;
-    if (test > TEST_END) stopLoop = true;
+    if (test > SUBTASK_END) stopLoop = true;
 }
 // Check and return whether there is identical test to test with given index
 bool checkIdenticalTest(int test) {
-    for (int i = TEST_START; i < test; i++) {
+    for (int i = SUBTASK_START; i < test; i++) {
         string checkDirectory;
         string checkFileName;
         generateDirectory(i, checkDirectory);
@@ -244,7 +354,7 @@ void generateTest(int test) {
     if (GENERATE_OUTPUT)
         generateOutputTest(test);
     if (STRESS_TEST)
-        stressTest(test);
+        stressTests(test);
     if (!STRESS_TEST_KEEP_WA_TEST_ONLY ||
         (STRESS_TEST_KEEP_WA_TEST_ONLY && wrongSolutionOutput)) {
         moveInputFile(test);
@@ -253,33 +363,55 @@ void generateTest(int test) {
 }
 // Generates full tests
 void generateTests() {
-
-    if (STRESS_TEST_WRITE_REPORT)
-        stressTestLog.open("stress_test_log.txt"); //THIS IS NEEDED IN CHECKING OUTPUT RESULTS BETWEEN TWO CODE FILES
-
-    if (CLEAN_ROOT_FOLDER)
-        system(("rmdir /s /q " + FILENAME).c_str());
-
-    mkdir(FILENAME.c_str()); // Create tests root folder
-
-    for (int test = TEST_START;;) {
+    stopLoop = false;
+    for (int test = SUBTASK_START;;) {
         stopLoopCheck(test);
         if (stopLoop) break;
         generateTest(test);
         increaseTestIndex(test);
     }
-
-    if (STRESS_TEST_WRITE_REPORT)
-        stressTestLog.close();
 }
 
+
+void generateTestSet() {
+    if (CLEAN_ROOT_FOLDER)
+        system(("rmdir /s /q " + FILENAME).c_str());
+
+    mkdir(FILENAME.c_str()); // Create tests root folder
+
+    for (int i = 1; i <= subtasks.size(); i++) {
+        if (STRESS_TEST_WRITE_REPORT)
+            stressTestLog.open("stress_test_log_subtask" + to_string(i) + ".txt"); //THIS IS NEEDED IN CHECKING OUTPUT RESULTS BETWEEN TWO CODE FILES
+        Subtask subtask = subtasks[i-1];
+        SUBTASK_START = subtask.startIndex;
+        SUBTASK_END = subtask.endIndex;
+        SUBTASK_LIMITS = subtask.limits;
+        generateTests();
+        showMsg("\n-----------------------------------------\n");
+        showMsg("DONE SUBTASK " + to_string(i) + "! Test index from " + to_string(SUBTASK_START) + " to " + to_string(SUBTASK_END) + "\n");
+        showMsg("-----------------------------------------\n\n");
+
+        if (STRESS_TEST_WRITE_REPORT)
+            stressTestLog.close();
+    }
+}
+
+
+
+
+
 int main() {
-    boostcode;
+    //cin.tie(0);
+    //boostcode;
     //openf;
 
     //ofstream OUTPUT("TEST_OUTPUT.out"); //THIS IS NEEDED IN CHECKING OUTPUT RESULTS BETWEEN TWO CODE FILES
+    if (GENERATE_OUTPUT) compileExecutables();
+    initializeSubtasks();
+    generateTestSet();
 
-    generateTests();
+    cout << "\n || DONE GENERATING TESTS!! ||\n";
+    cout << "(Have a nice day! :D)\n\n";
 
     if (errorFlag)
         cout << "There were errors while generating tests which made some things go wrong (not generating things, stress test not working,...)!\nPlease check detail in LOG.txt!!";
